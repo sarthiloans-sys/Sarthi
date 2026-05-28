@@ -1,0 +1,24 @@
+{
+  "short_name": "FinSight",
+  "name": "FinSight Market Scholar: Academic Stock & Options Terminal",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2632/2632283.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2632/2632283.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0f172a",
+  "theme_color": "#2563eb",
+  "display": "standalone",
+  "orientation": "portrait",
+  "description": "Educational Stock Terminal & Options Greeks Payoff Sandbox with live simulated metrics."
+}

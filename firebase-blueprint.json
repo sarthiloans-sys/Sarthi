@@ -1,0 +1,157 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Stores core registered user details, authentication profiles, and system access roles.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Unique user identification from Firebase Authentication."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "User account email address."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User friendly display name."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["user", "admin"],
+          "description": "Security access level. Admins gain access to parameters override dashboard."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when account profile was registered."
+        }
+      },
+      "required": ["uid", "email", "role", "createdAt"]
+    },
+    "AdminSetting": {
+      "title": "Global Admin & Market Config",
+      "description": "Stores real API keys, alert broadcasts, and admin settings overrides.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Static ID of configuration e.g. target_market"
+        },
+        "nseBseApiUrl": {
+          "type": "string",
+          "description": "Base URL of real-time market API configuration."
+        },
+        "nseBseApiKey": {
+          "type": "string",
+          "description": "Encrypted or masked API key credential."
+        },
+        "customBroadcastAlert": {
+          "type": "string",
+          "description": "Top marquee ribbon message broadcast to all students."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last updated timestamp."
+        },
+        "updatedBy": {
+          "type": "string",
+          "description": "UID of admin who modified the settings."
+        }
+      },
+      "required": ["id", "updatedAt"]
+    },
+    "UserAlert": {
+      "title": "User Price Alert Trigger",
+      "description": "Saved price alert trigger details synchronized server-side.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique key identifier."
+        },
+        "uid": {
+          "type": "string",
+          "description": "Creator user ID."
+        },
+        "symbol": {
+          "type": "string",
+          "description": "Stock trading code symbol."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["ABOVE", "BELOW"],
+          "description": "Threshold trigger type direction."
+        },
+        "targetPrice": {
+          "type": "number",
+          "description": "Price level that triggers alert."
+        },
+        "isTriggered": {
+          "type": "boolean",
+          "description": "Has this alert fired?"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp created."
+        }
+      },
+      "required": ["id", "uid", "symbol", "type", "targetPrice", "isTriggered"]
+    },
+    "CustomNewsItem": {
+      "title": "Custom Educational Market News",
+      "description": "News items broadcasts posted dynamically via the Admin Board.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique document key tracker."
+        },
+        "title": {
+          "type": "string",
+          "description": "News headline."
+        },
+        "summary": {
+          "type": "string",
+          "description": "Brief news synopsis."
+        },
+        "source": {
+          "type": "string",
+          "description": "Editorial or market agency citation source."
+        },
+        "category": {
+          "type": "string",
+          "description": "Sectors tags like IT, PSU, Pharma etc."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Time published."
+        }
+      },
+      "required": ["id", "title", "summary", "source", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "Registered academic student profile credentials."
+    },
+    "settings/{configId}": {
+      "schema": "AdminSetting",
+      "description": "Administrative configurations and private integration API credentials."
+    },
+    "alerts/{alertId}": {
+      "schema": "UserAlert",
+      "description": "Dynamic stock alerts registered to students."
+    },
+    "news/{newsId}": {
+      "schema": "CustomNewsItem",
+      "description": "Dynamic custom news postings published by admins."
+    }
+  }
+}

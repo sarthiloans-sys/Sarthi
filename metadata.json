@@ -1,0 +1,6 @@
+{
+  "name": "Educational Stock Market Analytics",
+  "description": "An educational stock terminal providing live stock price simulation, company fundamental metrics, technical trend analyzers, and financial charts without investment recommendations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
