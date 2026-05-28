@@ -115,6 +115,84 @@ export default function MarketOverview({
           </div>
         </div>
 
+        {/* Market Heatmap Visualization Block */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm transition-colors">
+          <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3 mb-4 select-none">
+            <div className="flex items-center gap-2">
+              <span className="p-1 px-2 text-indigo-50 bg-indigo-550/10 dark:bg-indigo-950 text-indigo-750 dark:text-indigo-400 font-mono font-bold text-[9px] rounded border border-indigo-200/25 uppercase">Constituents Heatmap</span>
+              <h2 className="font-display font-black text-sm md:text-base text-slate-900 dark:text-white uppercase tracking-wider">Market Overview Heat Grid</h2>
+            </div>
+            <span className="text-[10px] text-slate-400 font-mono font-medium">Click block to study terminal</span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">
+            {stocks.map((s) => {
+              const chg = s.changePercent;
+              // determine performance-based background colors
+              let bgClass = "bg-slate-50 dark:bg-slate-950/40 text-slate-900 dark:text-slate-150";
+              let borderClass = "border-slate-200 dark:border-slate-850 hover:border-indigo-500/50";
+              let percentColor = "text-slate-500 dark:text-slate-400";
+              
+              if (chg >= 1.5) {
+                bgClass = "bg-emerald-600 dark:bg-emerald-755 text-white";
+                borderClass = "border-emerald-700 hover:border-emerald-400";
+                percentColor = "text-emerald-100 font-black";
+              } else if (chg > 0.0) {
+                bgClass = "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-950 dark:text-emerald-450";
+                borderClass = "border-emerald-200/55 dark:border-emerald-900/40 hover:border-emerald-400";
+                percentColor = "text-emerald-750 dark:text-emerald-400";
+              } else if (chg <= -1.5) {
+                bgClass = "bg-rose-600 dark:bg-rose-755 text-white";
+                borderClass = "border-rose-700 hover:border-rose-450";
+                percentColor = "text-rose-100 font-black";
+              } else if (chg < 0.0) {
+                bgClass = "bg-rose-50 dark:bg-rose-950/30 text-rose-950 dark:text-rose-450";
+                borderClass = "border-rose-250/55 dark:border-rose-900/40 hover:border-rose-450";
+                percentColor = "text-rose-750 dark:text-rose-400";
+              }
+
+              return (
+                <button
+                  key={s.symbol}
+                  onClick={() => onSelectStock(s.symbol)}
+                  className={`p-3 rounded-lg border text-left transition duration-150 transform hover:-translate-y-0.5 whitespace-nowrap shadow-xs flex flex-col justify-between h-[80px] cursor-pointer ${bgClass} ${borderClass}`}
+                >
+                  <div className="flex justify-between items-start w-full gap-2">
+                    <span className="font-mono font-extrabold text-xs tracking-wide">{s.symbol}</span>
+                    <span className="text-[8.5px] font-mono opacity-80 leading-none bg-slate-100/50 dark:bg-slate-900/40 p-0.5 px-1 rounded uppercase">{s.sector.split(" ")[0]}</span>
+                  </div>
+                  <div className="w-full mt-2 flex justify-between items-baseline">
+                    <span className="text-[10px] font-bold font-mono">₹{s.price.toFixed(0)}</span>
+                    <span className={`text-[10px] font-bold font-mono leading-none ${percentColor}`}>
+                      {chg >= 0 ? "+" : ""}{chg.toFixed(1)}%
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          
+          <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5 text-[9.5px] text-slate-500 dark:text-slate-405 font-mono select-none border-t border-slate-100 dark:border-slate-800/80 pt-3 uppercase">
+            <span className="font-bold flex items-center gap-1">Color Legend:</span>
+            <div className="flex items-center gap-1">
+              <span className="h-2.5 w-2.5 bg-emerald-600 rounded-sm" />
+              <span>Bullish (&ge; 1.5%)</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="h-2.5 w-2.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/50 rounded-sm" />
+              <span>Mild Uptrend</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="h-2.5 w-2.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200/50 rounded-sm" />
+              <span>Mild Downtrend</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="h-2.5 w-2.5 bg-rose-600 rounded-sm" />
+              <span>Bearish (&le; -1.5%)</span>
+            </div>
+          </div>
+        </div>
+
         {/* B. News Feed Section */}
         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-200 pb-3 mb-4">

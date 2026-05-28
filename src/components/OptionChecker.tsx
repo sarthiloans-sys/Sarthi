@@ -164,6 +164,65 @@ export default function OptionChecker({ stock }: OptionCheckerProps) {
   const [numberOfLots, setNumberOfLots] = useState<number>(1);
   const [simulatedExpirySpot, setSimulatedExpirySpot] = useState<number>(0);
 
+  // Active simulated paper trading positions list
+  const [paperPositions, setPaperPositions] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem(`paper_deriv_positions_${stock.symbol}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Save when position state updates
+  React.useEffect(() => {
+    localStorage.setItem(`paper_deriv_positions_${stock.symbol}`, JSON.stringify(paperPositions));
+  }, [paperPositions, stock.symbol]);
+
+  const handleDeployPaperTrade = () => {
+    if (!selectedStrikePrice || !customPremium) return;
+    const newPos = {
+      id: Date.now().toString(),
+      symbol: stock.symbol,
+      type: optionType,
+      action: tradeAction,
+      strike: selectedStrikePrice,
+      entryPremium: customPremium,
+      qty: lotSize * numberOfLots,
+      timestamp: new Date().toLocaleTimeString()
+    };
+    setPaperPositions(prev => [newPos, ...prev]);
+  };
+
+  const handleDeletePaperTrade = (id: string) => {
+    setPaperPositions(prev => prev.filter(p => p.id !== id));
+  };
+
+  // Live computed positions stats (ticks in real-time!)
+  const positionsWithLiveStats = useMemo(() => {
+    return paperPositions.map((pos) => {
+      const bsLive = calculateBlackScholes(
+        stock.price,
+        pos.strike,
+        daysToExpiry,
+        impliedVol,
+        interestRate
+      );
+      const currentPremium = pos.type === "CE" ? bsLive.callPrice : bsLive.putPrice;
+      const isBuy = pos.action === "BUY";
+      const pnl = isBuy
+        ? (currentPremium - pos.entryPremium) * pos.qty
+        : (pos.entryPremium - currentPremium) * pos.qty;
+
+      return {
+        ...pos,
+        currentPremium,
+        pnl,
+        percentageReturn: ((isBuy ? currentPremium - pos.entryPremium : pos.entryPremium - currentPremium) / pos.entryPremium) * 100
+      };
+    });
+  }, [paperPositions, stock.price, daysToExpiry, impliedVol, interestRate]);
+
   // Set defaults when stock symbol updates
   React.useEffect(() => {
     // Generate standard strike around current spot price (rounded to nearest 50)
@@ -631,20 +690,32 @@ export default function OptionChecker({ stock }: OptionCheckerProps) {
               </div>
             </div>
 
-            <div className="bg-slate-100 p-3.5 border border-slate-200 rounded-xl space-y-1.5">
-              <span className="text-[10px] text-slate-500 font-sans block font-bold leading-tight">POSITION EXPOSURE CALCULATION</span>
+            <div className="bg-slate-100 dark:bg-slate-950 p-3.5 border border-slate-200 dark:border-slate-800 rounded-xl space-y-1.5">
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-sans block font-bold leading-tight">POSITION EXPOSURE CALCULATION</span>
               <div className="flex justify-between items-center text-xs mt-1">
-                <span className="text-slate-500">Total Contract Qty:</span>
-                <span className="text-slate-800 font-extrabold font-mono">{(lotSize * numberOfLots).toLocaleString()} shares</span>
+                <span className="text-slate-500 dark:text-slate-400">Total Contract Qty:</span>
+                <span className="text-slate-800 dark:text-slate-200 font-extrabold font-mono">{(lotSize * numberOfLots).toLocaleString()} shares</span>
               </div>
               <div className="flex justify-between items-center text-xs">
-                <span className="text-slate-500">Total Premium Cost:</span>
-                <span className="text-slate-900 font-black font-mono">₹{(customPremium * lotSize * numberOfLots).toFixed(2)}</span>
+                <span className="text-slate-500 dark:text-slate-400">Total Premium Cost:</span>
+                <span className="text-slate-900 dark:text-white font-black font-mono">₹{(customPremium * lotSize * numberOfLots).toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center text-xs">
-                <span className="text-slate-500">Capital At Rick / Margin:</span>
-                <span className="text-blue-700 font-black font-mono">₹{currentPayoffResult.marginUsed.toFixed(0)}</span>
+                <span className="text-slate-500 dark:text-slate-400">Capital At Risk / Margin:</span>
+                <span className="text-indigo-600 dark:text-indigo-400 font-black font-mono">₹{currentPayoffResult.marginUsed.toFixed(0)}</span>
               </div>
+              
+              <button
+                type="button"
+                onClick={handleDeployPaperTrade}
+                className={`w-full mt-2 py-2 px-3.5 rounded-lg text-white font-bold text-xs uppercase tracking-wider transition-all shadow-sm cursor-pointer border ${
+                  tradeAction === "BUY"
+                    ? "bg-indigo-650 hover:bg-indigo-700 border-indigo-700 active:bg-indigo-800"
+                    : "bg-rose-650 hover:bg-rose-700 border-rose-700 active:bg-rose-800"
+                }`}
+              >
+                🚀 Deploy Paper Simulation Trade
+              </button>
             </div>
 
             {/* Dynamic Interactive Slider for simulating target pricing on expiration date */}
@@ -775,6 +846,85 @@ export default function OptionChecker({ stock }: OptionCheckerProps) {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* 2.5 Dynamic Simulated Paper Derivatives Positions Dashboard */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 md:p-5 shadow-sm transition-colors">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3 mb-4 select-none">
+          <div className="flex items-center gap-2">
+            <Percent className="h-5 w-5 text-indigo-650 dark:text-indigo-400" />
+            <h2 className="font-display font-medium text-sm md:text-base text-slate-900 dark:text-white font-extrabold uppercase tracking-wider">
+              Paper Option Portfolio Monitor ({stock.symbol})
+            </h2>
+          </div>
+          <span className="text-[10px] bg-indigo-50 dark:bg-indigo-950/50 text-indigo-750 dark:text-indigo-400 font-mono font-bold border border-indigo-200/40 dark:border-indigo-900/40 py-1 px-3 rounded-lg shadow-sm">
+            Live Ticking • Spot Price: ₹{stock.price.toFixed(2)}
+          </span>
+        </div>
+
+        {positionsWithLiveStats.length === 0 ? (
+          <div className="text-center py-8 text-slate-400 dark:text-slate-500 text-xs font-sans font-medium">
+            No active paper contracts deployed for {stock.symbol}.
+            <p className="text-[10.5px] text-slate-450 dark:text-slate-500 font-mono mt-1 max-w-xl mx-auto">
+              Use the Position Simulator Setup on the left and click "Deploy Paper Simulation Trade" to begin tracking live premium decay and delta sensitivity metrics in real-time.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-lg border border-slate-100 dark:border-slate-850">
+            <table className="w-full text-left text-xs font-mono border-collapse min-w-[650px]">
+              <thead>
+                <tr className="bg-slate-50 dark:bg-slate-950/70 text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider border-b border-slate-200/60 dark:border-slate-800">
+                  <th className="p-3">Contract Detail</th>
+                  <th className="p-3 text-center">Action</th>
+                  <th className="p-3 text-right">Entry Premium</th>
+                  <th className="p-3 text-right">Live Premium</th>
+                  <th className="p-3 text-right">Contract Volume</th>
+                  <th className="p-3 text-right">Live P&L</th>
+                  <th className="p-3 text-center">Manage</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-150/75 dark:divide-slate-850 text-[11px] font-medium text-slate-700 dark:text-slate-300">
+                {positionsWithLiveStats.map((pos) => {
+                  const isProfit = pos.pnl >= 0;
+                  return (
+                    <tr key={pos.id} className="hover:bg-slate-50/40 dark:hover:bg-slate-950/20 transition-colors">
+                      <td className="p-3">
+                        <span className="font-bold text-slate-900 dark:text-white font-sans text-xs">
+                          {pos.symbol} ₹{pos.strike} {pos.type === "CE" ? "Call (CE)" : "Put (PE)"}
+                        </span>
+                        <span className="block text-[9.5px] text-slate-400 dark:text-slate-500 font-mono mt-0.5">Time: {pos.timestamp}</span>
+                      </td>
+                      <td className="p-3 text-center">
+                        <span className={`px-2 py-0.5 rounded text-[9.5px] font-bold uppercase font-sans ${
+                          pos.action === "BUY"
+                            ? "bg-indigo-50 dark:bg-indigo-950/80 text-indigo-750 dark:text-indigo-400 border border-indigo-200/50 dark:border-indigo-900/30"
+                            : "bg-rose-50 dark:bg-rose-950/80 text-rose-755 dark:text-rose-450 border border-rose-200/50 dark:border-rose-900/30"
+                        }`}>
+                          {pos.action === "BUY" ? "Long" : "Short"}
+                        </span>
+                      </td>
+                      <td className="p-3 text-right text-slate-900 dark:text-slate-350">₹{pos.entryPremium.toFixed(1)}</td>
+                      <td className="p-3 text-right font-bold text-slate-950 dark:text-white font-mono">₹{pos.currentPremium.toFixed(1)}</td>
+                      <td className="p-3 text-right text-slate-500 dark:text-slate-400">{(pos.qty).toLocaleString()} shares</td>
+                      <td className={`p-3 text-right font-black ${isProfit ? "text-emerald-600 dark:text-emerald-500" : "text-rose-600 dark:text-rose-500"}`}>
+                        {isProfit ? "+" : ""}₹{pos.pnl.toFixed(0)} ({isProfit ? "+" : ""}{pos.percentageReturn.toFixed(1)}%)
+                      </td>
+                      <td className="p-3 text-center">
+                        <button
+                          onClick={() => handleDeletePaperTrade(pos.id)}
+                          className="p-1 px-1.5 text-slate-400 hover:text-rose-650 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-transparent hover:border-rose-200/50 rounded transition duration-150 cursor-pointer"
+                          title="Square off / Close contract position"
+                        >
+                          Square Off
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* 3. Dynamic Theoretical Greeks Deconstruction Table & Math Reference */}
